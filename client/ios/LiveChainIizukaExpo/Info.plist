@@ -80,6 +80,5 @@
     <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
     <string>このアプリは地図表示と位置情報サービスに位置情報を使用します。</string>
     <key>GMSApiKey</key>
-    <string>AIzaSyBFY7whudt4As3SWXj09_-Jd42QQxTWV1k</string>
   </dict>
 </plist>

@@ -1,7 +1,7 @@
-import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, Image, ActivityIndicator } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 // 白黒カスタムスタイル
 const mapStyle = [
@@ -25,9 +25,19 @@ const mapStyle = [
   { "featureType": "water", "elementType": "labels.text.fill", "stylers": [{ "color": "#9e9e9e" }] }
 ];
 
+const minDelta = 0.005;
+const maxDelta = 0.1;
+const minSize = 30;
+const maxSize = 60;
+const LABEL_DELTA_THRESHOLD = 0.02; // この値以下でラベル表示
+
 const HomeScreen = () => {
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pinSize, setPinSize] = useState<number>(40);
+  const [latitudeDelta, setLatitudeDelta] = useState<number>(0.01);
+  const [showLabel, setShowLabel] = useState<boolean>(false);
+  const [denemonTeiSelected, setDenemonTeiSelected] = useState(false);
 
   // 旧伊藤伝右衛門邸の座標
   const denemonTei = {
@@ -49,6 +59,18 @@ const HomeScreen = () => {
     })();
   }, []);
 
+  const handleRegionChange = (region: any) => {
+    setLatitudeDelta(region.latitudeDelta);
+    const delta = Math.max(minDelta, Math.min(region.latitudeDelta, maxDelta));
+    const size = maxSize - ((delta - minDelta) / (maxDelta - minDelta)) * (maxSize - minSize);
+    setPinSize(size);
+    // ズームインしているかどうかでラベル表示を切り替え
+    const isZoomedIn = region.latitudeDelta < LABEL_DELTA_THRESHOLD;
+    setShowLabel(isZoomedIn);
+    // ズームアウトしたら選択も解除
+    if (!isZoomedIn && denemonTeiSelected) setDenemonTeiSelected(false);
+  };
+
   return (
     <View style={styles.container}>
       {location ? (
@@ -64,21 +86,46 @@ const HomeScreen = () => {
             longitudeDelta: 0.01,
           }}
           showsUserLocation={false}
+          moveOnMarkerPress={false}
+          renderToHardwareTextureAndroid={true}
+          minZoomLevel={10}
+          maxZoomLevel={20}
+          onRegionChange={handleRegionChange}
+          onPress={() => setDenemonTeiSelected(false)}
         >
           {/* 旧伊藤伝右衛門邸のカスタムマーカー */}
           <Marker
             coordinate={denemonTei}
             title={denemonTei.title}
             description={denemonTei.description}
-            image={require('../../assets/images/denemon-tei.png')}
-          />
+            onPress={e => {
+              e.stopPropagation();
+              setDenemonTeiSelected(true);
+            }}
+          >
+            <View style={{ alignItems: 'center' }}>
+              <Image
+                source={require('../../assets/images/pin.png')}
+                style={{ width: pinSize, height: pinSize, resizeMode: 'contain' }}
+              />
+              {(showLabel || denemonTeiSelected) && (
+                <View style={styles.labelContainer}>
+                  <Text style={styles.labelText}>{denemonTei.title}</Text>
+                </View>
+              )}
+            </View>
+          </Marker>
           {/* 現在地のカスタムマーカー */}
           <Marker
             coordinate={{ latitude: location.latitude, longitude: location.longitude }}
             title="あなたの現在地"
             description="現在地"
-            image={require('../../assets/images/my-location.png')}
-          />
+          >
+            <Image
+              source={require('../../assets/images/my-location.png')}
+              style={{ width: pinSize, height: pinSize, resizeMode: 'contain' }}
+            />
+          </Marker>
         </MapView>
       ) : (
         <View style={styles.loading}><ActivityIndicator size="large" /><Text>現在地を取得中...</Text></View>
@@ -131,6 +178,25 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  labelContainer: {
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: '#bbb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  labelText: {
+    fontWeight: 'bold',
+    color: '#333',
+    fontSize: 14,
   },
 });
 

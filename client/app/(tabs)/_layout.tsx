@@ -11,7 +11,7 @@ export default function TabLayout() {
         // `name="index"` は `index.tsx` ファイルに対応
         name="index"
         options={{
-          title: 'Home', // タブに表示される名前
+          title: 'ホーム', // タブに表示される名前
           headerShown: false, // マップ画面のヘッダーは不要なら消す
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
@@ -21,7 +21,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="passport"
         options={{
-          title: 'Passport',
+          title: 'コレクション',
           headerShown: true,
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={focused ? 'id-card' : 'id-card-outline'} color={color} />
