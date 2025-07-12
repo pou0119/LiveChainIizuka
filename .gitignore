@@ -1,0 +1,63 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# ルート直下
+node_modules/
+dist/
+.env
+*.log
+
+# client ディレクトリ
+client/node_modules/
+client/dist/
+client/build/
+client/.env
+
+# server ディレクトリ
+server/node_modules/
+server/dist/
+server/build/
+server/.env
+
+# すべての node_modules を無視したい場合（念のため）
+**/node_modules/
+
+# Expo / React Native
+.expo/
+.expo-shared/
+web-build/
+*.jsbundle
+
+# Xcode
+build/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata
+*.xccheckout
+*.moved-aside
+DerivedData
+*.hmap
+*.ipa
+*.xcuserstate
+project.xcworkspace
+.xcode.env.local
+
+# iOS
+ios/Pods/
+ios/build/
+ios/DerivedData/
+ios/*.xcworkspace
+
+# Android
+android/.gradle/
+android/app/build/
+android/build/
+
+client/ios/Pods/
