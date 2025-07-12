@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Image, ActivityIndicator } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { StyleSheet, Text, View, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
 
 // 白黒カスタムスタイル
 const mapStyle = [
@@ -36,8 +37,8 @@ const HomeScreen = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pinSize, setPinSize] = useState<number>(40);
   const [latitudeDelta, setLatitudeDelta] = useState<number>(0.01);
-  const [showLabel, setShowLabel] = useState<boolean>(false);
-  const [denemonTeiSelected, setDenemonTeiSelected] = useState(false);
+  const router = useRouter();
+  const [lastTap, setLastTap] = useState<number | null>(null);
 
   // 旧伊藤伝右衛門邸の座標
   const denemonTei = {
@@ -66,9 +67,6 @@ const HomeScreen = () => {
     setPinSize(size);
     // ズームインしているかどうかでラベル表示を切り替え
     const isZoomedIn = region.latitudeDelta < LABEL_DELTA_THRESHOLD;
-    setShowLabel(isZoomedIn);
-    // ズームアウトしたら選択も解除
-    if (!isZoomedIn && denemonTeiSelected) setDenemonTeiSelected(false);
   };
 
   return (
@@ -91,16 +89,13 @@ const HomeScreen = () => {
           minZoomLevel={10}
           maxZoomLevel={20}
           onRegionChange={handleRegionChange}
-          onPress={() => setDenemonTeiSelected(false)}
+          onPress={() => {}}
         >
           {/* 旧伊藤伝右衛門邸のカスタムマーカー */}
           <Marker
             coordinate={denemonTei}
-            title={denemonTei.title}
-            description={denemonTei.description}
-            onPress={e => {
-              e.stopPropagation();
-              setDenemonTeiSelected(true);
+            onPress={() => {
+              router.push('/place/denemon-tei');
             }}
           >
             <View style={{ alignItems: 'center' }}>
@@ -108,11 +103,13 @@ const HomeScreen = () => {
                 source={require('../../assets/images/pin.png')}
                 style={{ width: pinSize, height: pinSize, resizeMode: 'contain' }}
               />
-              {(showLabel || denemonTeiSelected) && (
-                <View style={styles.labelContainer}>
+              {/* ズームイン時のみラベル表示 */}
+              {latitudeDelta < LABEL_DELTA_THRESHOLD && (
+                <View style={[styles.labelContainer, { marginBottom: 4 }]}>
                   <Text style={styles.labelText}>{denemonTei.title}</Text>
                 </View>
               )}
+              {/* Calloutは削除 */}
             </View>
           </Marker>
           {/* 現在地のカスタムマーカー */}
