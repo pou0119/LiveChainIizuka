@@ -40,13 +40,21 @@ const HomeScreen = () => {
   const router = useRouter();
   const [lastTap, setLastTap] = useState<number | null>(null);
 
-  // 旧伊藤伝右衛門邸の座標
-  const denemonTei = {
-    latitude: 33.6550,
-    longitude: 130.6845,
-    title: '旧伊藤伝右衛門邸',
-    description: '福岡県飯塚市の歴史的建造物',
-  };
+  // 表示したい場所のデータを配列で管理
+  const places = [
+    {
+      id: 'denemon-tei-123',
+      latitude: 33.6550,
+      longitude: 130.6845,
+      title: '旧伊藤伝右衛門邸',
+    },
+    {
+      id: 'kaho-gekijyo-456',
+      latitude: 33.63646, // 嘉穂劇場の緯度
+      longitude: 130.68715, // 嘉穂劇場の経度
+      title: '嘉穂劇場',
+    }
+  ];
 
   useEffect(() => {
     (async () => {
@@ -91,38 +99,42 @@ const HomeScreen = () => {
           onRegionChange={handleRegionChange}
           onPress={() => {}}
         >
-          {/* 旧伊藤伝右衛門邸のカスタムマーカー */}
-          <Marker
-            coordinate={denemonTei}
-            onPress={() => {
-              router.push('/place/denemon-tei');
-            }}
-          >
-            <View style={{ alignItems: 'center' }}>
+          {/* places配列を元にマーカーを自動で生成 */}
+          {places.map((place) => (
+            <Marker
+              key={place.id} // keyにはユニークな値を指定
+              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
+              onPress={() => {
+                // IDを使って動的に遷移先を指定
+                router.push(`/place/${place.id}`);
+              }}
+            >
+              <View style={{ alignItems: 'center' }}>
+                <Image
+                  source={require('../../assets/images/pin.png')}
+                  style={{ width: pinSize, height: pinSize, resizeMode: 'contain' }}
+                />
+                {latitudeDelta < LABEL_DELTA_THRESHOLD && (
+                  <View style={[styles.labelContainer, { marginBottom: 4 }]}>
+                    <Text style={styles.labelText}>{place.title}</Text>
+                  </View>
+                )}
+              </View>
+            </Marker>
+          ))}
+
+          {/* 現在地のマーカーはそのまま残す */}
+          {location && (
+            <Marker
+              coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+              title="あなたの現在地"
+            >
               <Image
-                source={require('../../assets/images/pin.png')}
+                source={require('../../assets/images/my-location.png')}
                 style={{ width: pinSize, height: pinSize, resizeMode: 'contain' }}
               />
-              {/* ズームイン時のみラベル表示 */}
-              {latitudeDelta < LABEL_DELTA_THRESHOLD && (
-                <View style={[styles.labelContainer, { marginBottom: 4 }]}>
-                  <Text style={styles.labelText}>{denemonTei.title}</Text>
-                </View>
-              )}
-              {/* Calloutは削除 */}
-            </View>
-          </Marker>
-          {/* 現在地のカスタムマーカー */}
-          <Marker
-            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-            title="あなたの現在地"
-            description="現在地"
-          >
-            <Image
-              source={require('../../assets/images/my-location.png')}
-              style={{ width: pinSize, height: pinSize, resizeMode: 'contain' }}
-            />
-          </Marker>
+            </Marker>
+          )}
         </MapView>
       ) : (
         <View style={styles.loading}><ActivityIndicator size="large" /><Text>現在地を取得中...</Text></View>

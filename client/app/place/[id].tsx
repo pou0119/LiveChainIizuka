@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -21,35 +22,46 @@ interface PlaceDetail {
   officialWebsite?: string;
 }
 
-// ダミーの施設データ (APIから取得する想定)
-const DUMMY_PLACE_DATA: PlaceDetail = {
-  id: 'dummy-place-1',
-  name: '旧伊藤伝右衛門邸',
-  description: '筑豊の炭鉱王と呼ばれた伊藤伝右衛門とその妻である白蓮が暮らした邸宅。広大な庭園と豪華な建物が見どころです。',
-  imageUrl: 'http://192.168.0.133:3000/deimon.png',
-  ticketPrice: 500,
-  nftPreviewImages: [
-    'http://192.168.0.133:3000/nft1.png',
-    'https://via.placeholder.com/150/ADD8E6/000000?Text=NFT+Lv2',
-    'https://via.placeholder.com/150/90EE90/000000?Text=NFT+Lv3',
-  ],
-  officialWebsite: 'https://www.kankou-iizuka.jp/denemon/',
-};
+
 
 const PlaceDetailPage = () => {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>(); // URLからIDを取得
   const router = useRouter();
+
+  // stateを3種類用意
   const [place, setPlace] = useState<PlaceDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: id をもとにAPIから施設データを取得する処理を実装
-    // 例: fetch(`/api/places/${id}`).then(res => res.json()).then(data => setPlace(data));
-    // ここではダミーデータを使用
-    setPlace(DUMMY_PLACE_DATA);
-  }, [id]);
+    if (!id) return; // idがなければ何もしない
 
-  if (!place) {
-    return <Text>Loading place details...</Text>;
+    const fetchPlaceDetails = async () => {
+      try {
+        setLoading(true);
+        // サーバーにIDを使って問い合わせる
+        const response = await fetch(`http://192.168.0.133:3000/places/${id}`);
+        if (!response.ok) {
+          throw new Error('施設データの取得に失敗しました。');
+        }
+        const data: PlaceDetail = await response.json();
+        setPlace(data);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : '不明なエラーが発生しました');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlaceDetails();
+  }, [id]); // idが変わるたびにデータを再取得
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" /></View>;
+  }
+
+  if (error || !place) {
+    return <View style={styles.center}><Text style={{ color: 'red' }}>{error || '施設が見つかりません'}</Text></View>;
   }
 
   const handleBuyTicket = () => {
@@ -104,6 +116,11 @@ const PlaceDetailPage = () => {
 };
 
 const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff',
