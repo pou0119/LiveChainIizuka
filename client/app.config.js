@@ -13,7 +13,12 @@ export default {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.anonymous.LiveChainIizukaExpo"
+      bundleIdentifier: "com.anonymous.LiveChainIizukaExpo",
+      
+      // ▼▼▼ この infoPlist を追加しました ▼▼▼
+      infoPlist: {
+        "NSLocationWhenInUseUsageDescription": "マップ上にあなたの現在地と周辺の施設を表示するために、位置情報を利用します。"
+      }
     },
     android: {
       adaptiveIcon: {
@@ -45,6 +50,7 @@ export default {
           "ios": {
             // .envファイルからAPIキーを読み込む
             "googleMapsApiKey": process.env.Maps_API_KEY
+            
           },
           "android": {
             // .envファイルからAPIキーを読み込む

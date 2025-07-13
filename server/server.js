@@ -14,6 +14,7 @@ const db = new sqlite3.Database('places.db');
 
 // 初回起動時にテーブル作成＆サンプルデータ投入
 db.serialize(() => {
+  // 施設テーブル
   db.run(`
     CREATE TABLE IF NOT EXISTS places (
       id TEXT PRIMARY KEY,
@@ -23,6 +24,19 @@ db.serialize(() => {
       ticketPrice INTEGER,
       nftPreviewImages TEXT,
       officialWebsite TEXT
+    )
+  `);
+
+  // NFTコレクションテーブル
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_nfts (
+      id TEXT PRIMARY KEY,
+      userId TEXT,
+      placeId TEXT,
+      nftName TEXT,
+      imageUrl TEXT,
+      acquiredAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (placeId) REFERENCES places (id)
     )
   `);
 
@@ -59,6 +73,42 @@ db.serialize(() => {
       ]);
     }
   });
+
+  // サンプルNFTデータ（mineraruユーザー用）
+  db.get("SELECT COUNT(*) as count FROM user_nfts WHERE userId = 'mineraru'", (err, row) => {
+    if (row.count === 0) {
+      db.run(`
+        INSERT INTO user_nfts (id, userId, placeId, nftName, imageUrl)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        'nft-001',
+        'mineraru',
+        'denemon-tei-123',
+        '旧伊藤伝右衛門邸 - 春の庭園',
+        'http://192.168.0.133:3000/nft1.png'
+      ]);
+      db.run(`
+        INSERT INTO user_nfts (id, userId, placeId, nftName, imageUrl)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        'nft-002',
+        'mineraru',
+        'denemon-tei-123',
+        '旧伊藤伝右衛門邸 - 秋の紅葉',
+        'http://192.168.0.133:3000/nft2.png'
+      ]);
+      db.run(`
+        INSERT INTO user_nfts (id, userId, placeId, nftName, imageUrl)
+        VALUES (?, ?, ?, ?, ?)
+      `, [
+        'nft-003',
+        'mineraru',
+        'kaho-gekijyo-456',
+        '嘉穂劇場 - 夜の外観',
+        'http://192.168.0.133:3000/kaho.png'
+      ]);
+    }
+  });
 });
 
 // 施設一覧API
@@ -80,6 +130,52 @@ app.get('/places/:id', (req, res) => {
     if (!row) return res.status(404).json({ error: '施設が見つかりません' });
     row.nftPreviewImages = JSON.parse(row.nftPreviewImages || '[]');
     res.json(row);
+  });
+});
+
+// ユーザーのNFTコレクション取得API
+app.get('/users/:userId/nfts', (req, res) => {
+  const userId = req.params.userId;
+  
+  db.all(`
+    SELECT 
+      un.id,
+      un.nftName as name,
+      un.imageUrl,
+      p.name as placeName,
+      un.acquiredAt
+    FROM user_nfts un
+    LEFT JOIN places p ON un.placeId = p.id
+    WHERE un.userId = ?
+    ORDER BY un.acquiredAt DESC
+  `, [userId], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// NFT取得API（QRコードスキャン時に呼び出される）
+app.post('/users/:userId/acquire-nft', (req, res) => {
+  const userId = req.params.userId;
+  const { placeId, nftName, imageUrl } = req.body;
+  
+  if (!placeId || !nftName || !imageUrl) {
+    return res.status(400).json({ error: '必要なパラメータが不足しています' });
+  }
+  
+  const nftId = `nft-${Date.now()}`;
+  
+  db.run(`
+    INSERT INTO user_nfts (id, userId, placeId, nftName, imageUrl)
+    VALUES (?, ?, ?, ?, ?)
+  `, [nftId, userId, placeId, nftName, imageUrl], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    
+    res.json({
+      success: true,
+      nftId: nftId,
+      message: 'NFTを取得しました！'
+    });
   });
 });
 
